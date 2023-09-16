@@ -110,6 +110,6 @@ class Script(scripts.Script):
                 image_index += 1
         combined_image = images.combine_grid(grid)
         if opts.samples_save:
-            images.save_image(combined_image, p.outpath_samples, "", initial_seed, p.prompt, opts.samples_format, info=initial_info, p=p)
+            images.save_image(combined_image, p.outpath_samples, "", initial_seed, p.prompt, opts.samples_format, info=initial_info, p=p, negative_prompt=p.negative_prompt)
         processed = Processed(p, [combined_image], initial_seed, initial_info)
         return processed

@@ -333,7 +333,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                         p.restore_faces = False
                         info = infotext(i)
                         p.restore_faces = orig
-                        images.save_image(Image.fromarray(x_sample), path=p.outpath_samples, basename="", seed=p.seeds[i], prompt=p.prompts[i], extension=shared.opts.samples_format, info=info, p=p, suffix="-before-face-restore")
+                        images.save_image(Image.fromarray(x_sample), path=p.outpath_samples, basename="", seed=p.seeds[i], prompt=p.prompts[i], extension=shared.opts.samples_format, info=info, p=p, suffix="-before-face-restore", negative_prompt=p.negative_prompts[i])
                     p.ops.append('face')
                     x_sample = face_restoration.restore_faces(x_sample)
                     image = Image.fromarray(x_sample)
@@ -348,7 +348,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                         info = infotext(i)
                         p.color_corrections = orig
                         image_without_cc = apply_overlay(image, p.paste_to, i, p.overlay_images)
-                        images.save_image(image_without_cc, path=p.outpath_samples, basename="", seed=p.seeds[i], prompt=p.prompts[i], extension=shared.opts.samples_format, info=info, p=p, suffix="-before-color-correct")
+                        images.save_image(image_without_cc, path=p.outpath_samples, basename="", seed=p.seeds[i], prompt=p.prompts[i], extension=shared.opts.samples_format, info=info, p=p, suffix="-before-color-correct", negative_prompt=p.negative_prompts[i])
                     p.ops.append('color')
                     image = apply_color_correction(p.color_corrections[i], image)
                 if shared.opts.mask_apply_overlay:
@@ -358,19 +358,22 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                 image.info["parameters"] = text
                 output_images.append(image)
                 if shared.opts.samples_save and not p.do_not_save_samples:
-                    images.save_image(image, p.outpath_samples, "", p.seeds[i], p.prompts[i], shared.opts.samples_format, info=text, p=p) # main save image
+                    images.save_image(image, p.outpath_samples, "", p.seeds[i], p.prompts[i], shared.opts.samples_format, info=text, p=p, negative_prompt=p.negative_prompts[i]) # main save image
                 if hasattr(p, 'mask_for_overlay') and p.mask_for_overlay and any([shared.opts.save_mask, shared.opts.save_mask_composite, shared.opts.return_mask, shared.opts.return_mask_composite]):
                     image_mask = p.mask_for_overlay.convert('RGB')
                     image_mask_composite = Image.composite(image.convert('RGBA').convert('RGBa'), Image.new('RGBa', image.size), images.resize_image(3, p.mask_for_overlay, image.width, image.height).convert('L')).convert('RGBA')
                     if shared.opts.save_mask:
-                        images.save_image(image_mask, p.outpath_samples, "", p.seeds[i], p.prompts[i], shared.opts.samples_format, info=text, p=p, suffix="-mask")
+                        images.save_image(image_mask, p.outpath_samples, "", p.seeds[i], p.prompts[i], shared.opts.samples_format, info=text, p=p, suffix="-mask", negative_prompt=p.negative_prompts[i])
                     if shared.opts.save_mask_composite:
-                        images.save_image(image_mask_composite, p.outpath_samples, "", p.seeds[i], p.prompts[i], shared.opts.samples_format, info=text, p=p, suffix="-mask-composite")
+                        images.save_image(image_mask_composite, p.outpath_samples, "", p.seeds[i], p.prompts[i], shared.opts.samples_format, info=text, p=p, suffix="-mask-composite", negative_prompt=p.negative_prompts[i])
                     if shared.opts.return_mask:
                         output_images.append(image_mask)
                     if shared.opts.return_mask_composite:
                         output_images.append(image_mask_composite)
             del x_samples_ddim
+            if not p.disable_extra_networks:
+                with devices.autocast():
+                    extra_networks.deactivate(p, extra_network_data)
             devices.torch_gc()
 
         t1 = time.time()
@@ -388,7 +391,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     output_images.insert(0, grid)
                     index_of_first_image = 1
                 if shared.opts.grid_save:
-                    images.save_image(grid, p.outpath_grids, "", p.all_seeds[0], p.all_prompts[0], shared.opts.grid_format, info=infotext(-1), p=p, grid=True, suffix="-grid") # main save grid
+                    images.save_image(grid, p.outpath_grids, "", p.all_seeds[0], p.all_prompts[0], shared.opts.grid_format, info=infotext(-1), p=p, grid=True, suffix="-grid", negative_prompt=p.all_negative_prompts[0]) # main save grid
 
     if shared.backend == shared.Backend.DIFFUSERS:
         ipadapter.unapply(shared.sd_model)

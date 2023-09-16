@@ -581,7 +581,8 @@ options_templates.update(options_section(('ui', "User Interface Options"), {
     "keyedit_precision_extra": OptionInfo(0.05, "Ctrl+up/down precision when editing <extra networks:0.9>", gr.Slider, {"minimum": 0.01, "maximum": 0.2, "step": 0.001, "visible": False}),
     "keyedit_delimiters": OptionInfo(r".,\/!?%^*;:{}=`~()", "Ctrl+up/down word delimiters", gr.Textbox, { "visible": False }),
     "quicksettings_list": OptionInfo(["sd_model_checkpoint"] if backend == Backend.ORIGINAL else ["sd_model_checkpoint", "sd_model_refiner"], "Quicksettings list", gr.Dropdown, lambda: {"multiselect":True, "choices": list(opts.data_labels.keys())}),
-    "ui_scripts_reorder": OptionInfo("", "UI scripts order", gr.Textbox, { "visible": False }),
+    "ui_tab_reorder": OptionInfo("From Text, From Image, Process Image", "UI tabs order"),
+    "ui_scripts_reorder": OptionInfo("", "UI scripts order"),
 }))
 
 options_templates.update(options_section(('live-preview', "Live Previews"), {

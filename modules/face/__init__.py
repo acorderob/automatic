@@ -136,7 +136,7 @@ class Script(scripts.Script):
             if shared.opts.save_images_before_face_restoration and not p.do_not_save_samples:
                 for i, image in enumerate(processed.images):
                     info = processing.create_infotext(p, index=i)
-                    images.save_image(image, path=p.outpath_samples, seed=p.all_seeds[i], prompt=p.all_prompts[i], info=info, p=p, suffix="-before-faceswap")
+                    images.save_image(image, path=p.outpath_samples, seed=p.all_seeds[i], prompt=p.all_prompts[i], info=info, p=p, suffix="-before-faceswap", negative_prompt=p.all_negative_prompts[i])
             processed.images = face_swap(p, app=app, input_images=processed.images, source_image=input_images[0], cache=fs_cache)
 
         processed.info = processed.infotext(p, 0)
@@ -144,6 +144,6 @@ class Script(scripts.Script):
         if shared.opts.samples_save and not p.do_not_save_samples:
             for i, image in enumerate(processed.images):
                 info = processing.create_infotext(p, index=i)
-                images.save_image(image, path=p.outpath_samples, seed=p.all_seeds[i], prompt=p.all_prompts[i], info=info, p=p)
+                images.save_image(image, path=p.outpath_samples, seed=p.all_seeds[i], prompt=p.all_prompts[i], info=info, p=p, negative_prompt=p.all_negative_prompts[i])
 
         return processed

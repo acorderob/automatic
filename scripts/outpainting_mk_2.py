@@ -226,7 +226,7 @@ class Script(scripts.Script):
         res = Processed(p, all_images, initial_seed_and_info[0], initial_seed_and_info[1])
         if opts.samples_save:
             for img in all_processed_images:
-                images.save_image(img, p.outpath_samples, "", res.seed, p.prompt, opts.samples_format, info=res.info, p=p)
+                images.save_image(img, p.outpath_samples, "", res.seed, p.prompt, opts.samples_format, info=res.info, p=p, negative_prompt=p.negative_prompt)
         if opts.grid_save and len(all_processed_images) > 1:
-            images.save_image(combined_grid_image, p.outpath_grids, "grid", res.seed, p.prompt, opts.samples_format, info=res.info, grid=True, p=p)
+            images.save_image(combined_grid_image, p.outpath_grids, "grid", res.seed, p.prompt, opts.samples_format, info=res.info, grid=True, p=p, negative_prompt=p.negative_prompt)
         return res

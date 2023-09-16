@@ -129,7 +129,7 @@ class StyleDatabase:
         t0 = time.time()
         self.styles.clear()
 
-        def list_folder(folder):
+        def list_folder(folder, subfolder=False):
             import concurrent
             future_items = {}
             candidates = list(files_cache.list_files(folder, ext_filter=['.json'], recursive=files_cache.not_hidden))
@@ -139,15 +139,15 @@ class StyleDatabase:
                         future_items[executor.submit(self.load_style, fn, None)] = fn
                         # self.load_style(fn)
                     elif os.path.isdir(fn) and not fn.startswith('.'):
-                        list_folder(fn)
-                self.styles = dict(sorted(self.styles.items(), key=lambda style: style[1].filename))
-                if self.built_in:
+                        list_folder(fn, True)
+                if not subfolder and self.built_in:
                     fn = os.path.join('html', 'art-styles.json')
                     future_items[executor.submit(self.load_style, fn, 'built-in')] = fn
                 for future in concurrent.futures.as_completed(future_items):
                     future.result()
 
         list_folder(self.path)
+        self.styles = dict(sorted(self.styles.items(), key=lambda style: style[1].filename))
         t1 = time.time()
         log.debug(f'Load styles: folder="{self.path}" items={len(self.styles.keys())} time={t1-t0:.2f}')
 

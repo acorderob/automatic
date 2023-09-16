@@ -328,16 +328,19 @@ class FilenameGenerator:
         'prompt_no_styles': lambda self: self.prompt_no_style(),
         'prompt_words': lambda self: self.prompt_words(),
         'prompt_hash': lambda self: hashlib.sha256(self.prompt.encode()).hexdigest()[0:8],
+        'prompt_hash_full': lambda self: hashlib.sha256(((self.prompt or "") + "\nNegative prompt: "+(self.negative_prompt or (self.p and self.p.negative_prompt) or "")).encode()).hexdigest(),
 
         'sampler': lambda self: self.p and self.p.sampler_name,
         'seed': lambda self: self.seed and str(self.seed) or '',
         'steps': lambda self: self.p and self.p.steps,
+        'cfg': lambda self: self.p and self.p.cfg_scale,
+        'clip_skip': lambda self: self.p and self.p.clip_skip,
         'styles': lambda self: self.p and ", ".join([style for style in self.p.styles if not style == "None"]) or "None",
         'uuid': lambda self: str(uuid.uuid4()),
     }
     default_time_format = '%Y%m%d%H%M%S'
 
-    def __init__(self, p, seed, prompt, image, grid=False):
+    def __init__(self, p, seed, prompt, negative_prompt, image, grid=False):
         if p is None:
             debug('Filename generator init skip')
         else:
@@ -350,6 +353,7 @@ class FilenameGenerator:
         else:
             self.seed = 0
         self.prompt = prompt
+        self.negative_prompt = negative_prompt
         self.image = image
         if not grid:
             self.batch_number = NOTHING if self.p is None or getattr(self.p, 'batch_size', 1) == 1 else (self.p.batch_index + 1 if hasattr(self.p, 'batch_index') else NOTHING)
@@ -447,11 +451,9 @@ class FilenameGenerator:
             if part in invalid_files: # reserved names
                 [part := part.replace(word, '_') for word in invalid_files] # pylint: disable=expression-not-assigned
             newparts.append(part)
-        fn = str(Path(*newparts))
-        max_length = max(256 - len(ext), os.statvfs(__file__).f_namemax - 32 if hasattr(os, 'statvfs') else 256 - len(ext))
-        while len(os.path.abspath(fn)) > max_length:
-            fn = fn[:-1]
-        fn += ext
+        folder = Path(*newparts[:-1])
+        max_length = max(230, os.statvfs(__file__).f_namemax - 32 if hasattr(os, 'statvfs') else 230)
+        fn = str(Path(folder, newparts[-1][:max_length-max(4, len(ext))].rstrip(invalid_suffix) + ext))
         debug(f'Filename sanitize: input="{filename}" parts={parts} output="{fn}" ext={ext} max={max_length} len={len(fn)}')
         return fn
 
@@ -603,7 +605,7 @@ save_thread = threading.Thread(target=atomically_save_image, daemon=True)
 save_thread.start()
 
 
-def save_image(image, path, basename='', seed=None, prompt=None, extension=shared.opts.samples_format, info=None, short_filename=False, no_prompt=False, grid=False, pnginfo_section_name='parameters', p=None, existing_info=None, forced_filename=None, suffix='', save_to_dirs=None): # pylint: disable=unused-argument
+def save_image(image, path, basename='', seed=None, prompt=None, extension=shared.opts.samples_format, info=None, short_filename=False, no_prompt=False, grid=False, pnginfo_section_name='parameters', p=None, existing_info=None, forced_filename=None, suffix='', save_to_dirs=None, negative_prompt=None): # pylint: disable=unused-argument
     debug(f'Save from function={sys._getframe(1).f_code.co_name}') # pylint: disable=protected-access
     if image is None:
         shared.log.warning('Image is none')
@@ -612,7 +614,7 @@ def save_image(image, path, basename='', seed=None, prompt=None, extension=share
         return None, None
     if path is None or path == '': # set default path to avoid errors when functions are triggered manually or via api and param is not set
         path = shared.opts.outdir_save
-    namegen = FilenameGenerator(p, seed, prompt, image, grid=grid)
+    namegen = FilenameGenerator(p, seed, prompt, negative_prompt, image, grid=grid)
     suffix = suffix if suffix is not None else ''
     basename = basename if basename is not None else ''
     if shared.opts.save_to_dirs:
@@ -702,9 +704,9 @@ def save_video(p, images, filename = None, video_type: str = 'none', duration: f
         return
     image = images[0]
     if p is not None:
-        namegen = FilenameGenerator(p, seed=p.all_seeds[0], prompt=p.all_prompts[0], image=image)
+        namegen = FilenameGenerator(p, seed=p.all_seeds[0], prompt=p.all_prompts[0], negative_prompt=p.all_negative_prompts[0], image=image)
     else:
-        namegen = FilenameGenerator(None, seed=0, prompt='', image=image)
+        namegen = FilenameGenerator(None, seed=0, prompt='', negative_prompt='', image=image)
     if filename is None and p is not None:
         filename = namegen.apply(shared.opts.samples_filename_pattern if shared.opts.samples_filename_pattern and len(shared.opts.samples_filename_pattern) > 0 else "[seq]-[prompt_words]")
         filename = os.path.join(shared.opts.outdir_video, filename)

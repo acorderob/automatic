@@ -16,6 +16,8 @@ modules.errors.install()
 mimetypes.init()
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('image/webp', '.webp')
+mimetypes.add_type('application/javascript', '.mjs')
+
 log = shared.log
 opts = shared.opts
 cmd_opts = shared.cmd_opts
@@ -298,7 +300,7 @@ def create_ui(startup_timer = None):
                 dummy_component = gr.Textbox(visible=False, value='dummy')
                 with gr.Tabs(elem_id="settings"):
                     for i, (k, item) in enumerate(opts.data_labels.items()):
-                        section_must_be_skipped = item.section[0] is None
+                        section_must_be_skipped = item.section is None or item.section[0] is None
                         if previous_section != item.section and not section_must_be_skipped:
                             elem_id, text = item.section
                             if current_tab is not None and len(previous_section) > 0:

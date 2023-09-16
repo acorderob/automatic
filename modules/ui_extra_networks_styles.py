@@ -43,7 +43,7 @@ class ExtraNetworksPageStyles(ui_extra_networks.ExtraNetworksPage):
     def create_style(self, params):
         from modules.images import FilenameGenerator
         from hashlib import sha256
-        namegen = FilenameGenerator(p=None, seed=None, prompt=params.get('Prompt', ''), image=None, grid=False)
+        namegen = FilenameGenerator(p=None, seed=None, prompt=params.get('Prompt', ''), negative_prompt=params.get('Negative', ''), image=None, grid=False)
         name = namegen.prompt_words()
         sha = sha256(json.dumps(name).encode()).hexdigest()[0:8]
         fn = os.path.join(shared.opts.styles_dir, sha + '.json')

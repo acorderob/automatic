@@ -1,7 +1,7 @@
 window.opts = {};
 window.localization = {};
 window.titles = {};
-let tabSelected = '';
+//let tabSelected = '';
 let txt2img_textarea;
 let img2img_textarea;
 const wait_time = 800;
@@ -178,7 +178,7 @@ function create_submit_args(args) {
   return res;
 }
 
-function showSubmitButtons(tabname, show) {}
+function showSubmitButtons(tabname, show) { }
 
 function clearGallery(tabname) {
   const gallery = gradioApp().getElementById(`${tabname}_gallery`);
@@ -291,32 +291,41 @@ function registerDragDrop() {
 
 function sortUIElements() {
   // sort top-level tabs
-  const currSelected = gradioApp()?.querySelector('.tab-nav > .selected')?.innerText;
-  if (currSelected === tabSelected || !opts.ui_tab_reorder) return;
-  tabSelected = currSelected;
-  const tabs = gradioApp().getElementById('tabs')?.children[0];
-  if (!tabs) return;
-  let tabsOrder = opts.ui_tab_reorder?.split(',').map((el) => el.trim().toLowerCase()) || [];
-  for (const el of Array.from(tabs.children)) {
-    const elIndex = tabsOrder.indexOf(el.innerText.toLowerCase());
-    if (elIndex > -1) el.style.order = elIndex - 50; // default is 0 so setting to negative values
-  }
-  // sort always-on scripts
-  const find = (el, ordered) => {
-    for (const i in ordered) {
-      if (el.innerText.toLowerCase().startsWith(ordered[i])) return i;
+  let tabsOrder = opts.ui_tab_reorder?.split(',').map((el) => el.trim().toLowerCase()) ?? [];
+  if (tabsOrder.length) {
+    const tabs = Array.from(gradioApp().getElementById('tabs')?.children[0]?.children ?? []);
+    let isUnordered = tabs.length && tabs.some(tab => !tab.style.order);
+    if (isUnordered) {
+      for (const el of tabs) {
+        const elIndex = tabsOrder.indexOf(el.innerText.toLowerCase());
+        el.style.order = elIndex > -1 ? elIndex : tabs.length;
+      }
+      log('sortUIElements: tabs');
     }
-    return 99;
-  };
+  }
 
-  tabsOrder = opts.ui_scripts_reorder?.split(',').map((el) => el.trim().toLowerCase()) || [];
-
-  const scriptsTxt = gradioApp().getElementById('scripts_alwayson_txt2img').children;
-  for (const el of Array.from(scriptsTxt)) el.style.order = find(el, tabsOrder);
-
-  const scriptsImg = gradioApp().getElementById('scripts_alwayson_img2img').children;
-  for (const el of Array.from(scriptsImg)) el.style.order = find(el, tabsOrder);
-  log('sortUIElements');
+  // sort always-on scripts
+  let scriptsOrder = opts.ui_scripts_reorder?.split(',').map((el) => el.trim().toLowerCase().replace(/\s/g, "_")) ?? [];
+  if (scriptsOrder.length) {
+    const find = (prefix, count, el, ordered) => {
+      for (const i in ordered) {
+        if (el.id.toLowerCase().startsWith(prefix + ordered[i])) return i;
+      }
+      return count;
+    };
+    const sortScripts = (tabId, scriptsOrder) => {
+      const scripts = Array.from(gradioApp().getElementById(tabId + '_script_alwayson')?.children[2]?.children[0].children ?? []);
+      let isUnordered = scripts.length && scripts.some(panel => !panel.style.order);
+      if (isUnordered) {
+        for (const el of scripts) {
+          el.style.order = find(tabId + '_script_', scripts.length, el, scriptsOrder);
+        }
+        log(`sortUIElements: ${tabId} scripts`);
+      }
+    };
+    sortScripts('txt2img', scriptsOrder);
+    sortScripts('img2img', scriptsOrder);
+  }
 }
 
 onAfterUiUpdate(async () => {
@@ -336,7 +345,7 @@ onAfterUiUpdate(async () => {
     promptsInitialized = true;
   }
 
-  // sortUIElements();
+  sortUIElements();
   registerTextarea('txt2img_prompt', 'txt2img_token_counter', 'txt2img_token_button');
   registerTextarea('txt2img_neg_prompt', 'txt2img_negative_token_counter', 'txt2img_negative_token_button');
   registerTextarea('img2img_prompt', 'img2img_token_counter', 'img2img_token_button');

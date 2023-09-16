@@ -132,7 +132,7 @@ class Script(scripts.Script):
         if len(history) > 1:
             grid = images.image_grid(history, rows=1)
             if opts.grid_save:
-                images.save_image(grid, p.outpath_grids, "grid", initial_seed, p.prompt, opts.grid_format, info=info, grid=True, p=p)
+                images.save_image(grid, p.outpath_grids, "grid", initial_seed, p.prompt, opts.grid_format, info=info, grid=True, p=p, negative_prompt=p.negative_prompt)
 
             if opts.return_grid:
                 grids.append(grid)
